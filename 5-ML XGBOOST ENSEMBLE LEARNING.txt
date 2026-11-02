@@ -1,0 +1,91 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import (
+    VotingClassifier,
+    AdaBoostClassifier,
+    GradientBoostingClassifier,
+    RandomForestClassifier
+)
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    classification_report
+)
+from xgboost import XGBClassifier
+
+df = pd.read_csv("iris.csv")
+df = df.drop(columns=["Id"], errors="ignore")
+
+target = "Species" if "Species" in df.columns else "species"
+
+X = df.drop(columns=[target])
+y = LabelEncoder().fit_transform(df[target])
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y,
+    test_size=0.25,
+    random_state=42,
+    stratify=y
+)
+
+models = {
+    "Voting Classifier": VotingClassifier(
+        estimators=[
+            ("lr", make_pipeline(
+                StandardScaler(),
+                LogisticRegression(max_iter=2000)
+            )),
+            ("dt", DecisionTreeClassifier(max_depth=3, random_state=42)),
+            ("rf", RandomForestClassifier(n_estimators=150, random_state=42))
+        ],
+        voting="hard"
+    ),
+    "AdaBoost": AdaBoostClassifier(
+        n_estimators=100,
+        random_state=42
+    ),
+    "Gradient Boosting": GradientBoostingClassifier(
+        random_state=42
+    ),
+    "XGBoost": XGBClassifier(
+        n_estimators=100,
+        max_depth=3,
+        learning_rate=0.1,
+        objective="multi:softprob",
+        num_class=3,
+        eval_metric="mlogloss",
+        random_state=42
+    )
+}
+
+results = []
+
+for name, model in models.items():
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+
+    results.append({
+        "Model": name,
+        "Accuracy": accuracy_score(y_test, y_pred),
+        "Precision": precision_score(y_test, y_pred, average="macro", zero_division=0),
+        "Recall": recall_score(y_test, y_pred, average="macro", zero_division=0),
+        "F1 Score": f1_score(y_test, y_pred, average="macro", zero_division=0)
+    })
+
+    print("\n", name)
+    print(classification_report(
+        y_test,
+        y_pred,
+        target_names=LabelEncoder().fit(df[target]).classes_,
+        zero_division=0
+    ))
+
+results_df = pd.DataFrame(results)
+print("\nModel Performance Comparison:")
+print(results_df.round(4).to_string(index=False))

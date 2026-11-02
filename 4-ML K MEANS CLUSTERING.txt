@@ -1,0 +1,38 @@
+
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+
+df = pd.read_csv("iris.csv")
+X = df.drop(columns=["Id", "Species", "species"], errors="ignore")
+
+X = StandardScaler().fit_transform(X)
+
+wcss = []
+k_values = range(1, 11)
+
+for k in k_values:
+    model = KMeans(n_clusters=k, random_state=42, n_init=10)
+    model.fit(X)
+    wcss.append(model.inertia_)
+
+plt.plot(k_values, wcss, marker="o")
+plt.xlabel("Number of Clusters (k)")
+plt.ylabel("WCSS")
+plt.title("Elbow Method")
+plt.grid(alpha=0.25)
+plt.show()
+
+k = 3
+model = KMeans(n_clusters=k, random_state=42, n_init=10)
+labels = model.fit_predict(X)
+
+plt.scatter(X[:, 2], X[:, 3], c=labels, cmap="viridis")
+plt.xlabel("Scaled Petal Length")
+plt.ylabel("Scaled Petal Width")
+plt.title("K-Means Clustering (k=3)")
+plt.show()
+
+print("Optimal number of clusters: 3")
+print("Cluster counts:", pd.Series(labels).value_counts().sort_index().to_dict())

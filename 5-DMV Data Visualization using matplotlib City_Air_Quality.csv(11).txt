@@ -1,0 +1,46 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("City_Air_Quality.csv", parse_dates=["Date"])
+
+print(df.head())
+print(df.info())
+print(df.describe())
+print(df[["Date", "PM2.5", "PM10", "CO", "AQI"]].head())
+
+plt.figure(figsize=(10, 4))
+plt.plot(df["Date"], df["AQI"], color="purple", label="AQI")
+plt.title("AQI Trend Over Time")
+plt.xlabel("Date")
+plt.ylabel("AQI")
+plt.legend()
+plt.show()
+
+fig, ax = plt.subplots(3, 1, figsize=(10, 7), sharex=True)
+
+for a, col in zip(ax, ["PM2.5", "PM10", "CO"]):
+    a.plot(df["Date"], df[col], label=col)
+    a.set_ylabel(col)
+    a.legend()
+
+plt.suptitle("Pollutant Trends Over Time")
+plt.xlabel("Date")
+plt.tight_layout()
+plt.show()
+
+monthly = df.groupby(df["Date"].dt.month)["AQI"].mean()
+monthly.plot.bar(color="orange", title="Monthly Average AQI")
+plt.xlabel("Month")
+plt.ylabel("AQI")
+plt.show()
+
+df[["AQI"]].plot.box(title="AQI Distribution")
+plt.ylabel("AQI")
+plt.show()
+
+plt.scatter(df["PM2.5"], df["AQI"], c=df["PM10"], cmap="viridis")
+plt.colorbar(label="PM10")
+plt.xlabel("PM2.5")
+plt.ylabel("AQI")
+plt.title("AQI vs PM2.5")
+plt.show()

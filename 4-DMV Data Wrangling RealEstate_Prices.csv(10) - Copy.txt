@@ -1,0 +1,21 @@
+import pandas as pd
+
+df = pd.read_csv("RealEstate_Prices.csv")
+df.columns = df.columns.str.lower().str.replace(r"[^a-z0-9]+", "_", regex=True).str.strip("_")
+print(df.columns.tolist())
+
+df["area_sqft"] = df.area_sqft.fillna(df.area_sqft.median())
+df["sale_date"] = pd.to_datetime(df.sale_date)
+
+info = pd.DataFrame({"neighborhood": ["Kothrud", "Baner", "Hinjewadi", "Wakad"], "metro_km": [2, 5, 8, 7]})
+df = df.merge(info, on="neighborhood", how="left")
+
+sub = df[(df.sale_date >= "2023-01-01") & (df.property_type == "House")]
+print("Houses sold since 2023:", len(sub))
+
+df = pd.get_dummies(df, columns=["property_type"])
+print(df.groupby("neighborhood").sale_price.mean().round())
+
+q1, q3 = df.sale_price.quantile([.25, .75])
+df = df[df.sale_price.between(q1 - 1.5 * (q3 - q1), q3 + 1.5 * (q3 - q1))]
+print("Rows after outlier removal:", len(df))
